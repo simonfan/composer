@@ -1,0 +1,12 @@
+{
+  "name": "composer",
+  "version": "0.0.1",
+  "dependencies": {
+    "jquery": "lastest",
+    "underscore": "latest",
+    "requirejs": "latest",
+    "fsm": "simonfan/fsm",
+    "anima": "simonfan/anima"
+  },
+  "main": "composer.js"
+}
