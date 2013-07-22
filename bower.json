@@ -5,8 +5,8 @@
     "jquery": "lastest",
     "underscore": "latest",
     "requirejs": "latest",
-    "fsm": "simonfan/fsm",
-    "anima": "simonfan/anima"
+    "anima": "simonfan/anima",
+    "taskrunner": "simonfan/taskrunner"
   },
   "main": "composer.js"
 }

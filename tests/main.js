@@ -6,14 +6,12 @@ require.config({
 		'jquery': 'components/jquery/jquery',
 		'underscore': 'components/underscore/underscore',
 		'eventemitter2': 'components/eventemitter2/lib/eventemitter2',
+		'json2': 'components/json2/json2',
 
 		'buildable': 'components/buildable/buildable',
 		'_.mixins': 'components/_.mixins/_.mixins',
-		'cascade': 'components/cascade/cascade',
 		'anima': 'components/anima/anima',
-		'fsm': 'components/fsm/fsm',
-		'wildcards': 'components/wildcards/wildcards',
-		'gs': 'components/gs/gs',
+		'taskrunner': 'components/taskrunner/taskrunner',
 
 		// the module files go here
 		'composer': '../composer',

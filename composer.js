@@ -1,5 +1,5 @@
-define(['jquery','cascade','eventemitter2','underscore','_.mixins','anima','fsm'],
-function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM ) {
+define(['jquery','underscore','_.mixins','anima','taskrunner'],
+function(   $   , undef      , undef    , Anima , TaskRunner ) {
 
 	// internal
 	var composer = {
@@ -9,26 +9,96 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 			var _this = this,
 				scene = _this.composer('scene', scenename),
 				promise;
-			
+
+			//////////////////////////////////////////////////////
+			///// 1: do stuff before running the transition //////
+			//////////////////////////////////////////////////////
+
+
+
+			/////////////////////////////////////
+			///// 2: transitate to scene ////////
+			/////////////////////////////////////
 			if (typeof scene === 'function') {
 				// if scene is a function, just run it.
-				promise = scene.call(this, this);
+				promise = scene.call(null, this);
 
 			} else if (typeof scene === 'object') {
-				// if it is an object
-				var anima_promises = _.map(scene)
 
+				console.log(scene)
+
+				// if it is an object, 
+				// assume that the object is a hash of statenames or statesequences
+				// keyed by ael id;
+				var anima_promises = _.map(scene, function(state, aelname) {
+					// get the anima object
+					var ael = _this.composer('ael', aelname);
+
+					// animate the object
+					return ael.anima('flow', state);
+				});
+
+				promise = $.when.apply(null, anima_promises);
 			}
 
-			var promise = typeof scene === 'function' ? scene.call(this, this) : $.when(this.$el.animate(scene, aoptions));
+
+			/////////////////////////////
+			///// 3: do stuff after /////
+			/////////////////////////////
 
 			// set state as stopped when this animation ends
-			promise.then(function() { _this.fsm('set','stopped:' + statename); });
+			promise.then(function() {
 
-			// set the state as on-transition just before the animation starts
-			this.fsm('set','on-transition:'+statename);
+			});
 
+			/////////////////////////////
+			///// 4: return promise /////
+			/////////////////////////////
 			return promise;
+		},
+
+		// builds up a scene object based on syntax
+		/*
+			stateName:targets
+			stateName
+		*/
+		_parseScene: function(scenename) {
+			var _this = this,
+				// split the scenename
+				split = scenename.split(':', 2),
+
+				// the scene object
+				scene = {};
+
+			if (split.length === 2 && split[1]) {
+				// in case the split is successful,
+				// check if the state is defined
+
+				var statename = split[0],
+					targets = split[1].split('|');
+
+				// if there is a defaultScene defined, clone it.
+				if (typeof defaultScene !== 'undefined') {
+					scene = _.clone(_this.defaultScene)
+				}
+
+
+				// loop through each of the targets
+				_.each(targets, function(targetId, index) {
+					scene[ targetId ] = statename;
+				});
+
+			} else if ( this.composer('state', scenename) ) {
+				// in case the split is not successful,
+				// check if the scenename is actually a statename
+				// if so, create a scene that sets all aels to that state.
+				var statename = scenename;
+				scene = _.mapo(_this.composer('ael'), function(ael, aelname) {
+					return statename;
+				});
+			}
+
+			return scene;
 		},
 
 		/////////////////
@@ -41,22 +111,32 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 				name: name,
 				value: scene,
 				options: {
-					evaluate: function(scene) {
+					iterate: function(scenename, scene) {
+						/*
+							When a scene is defined, the task that will execute the 
+							scene should be also defined
+						*/
+						/////////////////////////
+						/// 1: save the task ////
+						/////////////////////////
+						var _this = this;
+						this.taskrunner('task', scenename, function() {
+							return _this.composer('_toScene', scenename);
+						});
+
+						return scene;
+					},
+
+					evaluate: function(scenename, scene) {
 						var res;
 
 						if (typeof scene === 'object') {
 							// if the scene is an object
 							// for each property of the scene, evaluate its value.
 							// and copy the result to a new res object
-							res = {};
-
-							for (prop in scene) {
-								if (typeof scene[ prop ] === 'function') {
-									res[ prop ] = scene[ prop ].call(this.$el, this);
-								} else {
-									res[ prop ] = scene[ prop ];
-								}
-							}
+							res = _.mapo(scene, function(state, aelname) {
+								return (typeof state === 'function') ? state.call(this.$el, this) : state;
+							});
 
 						} else {
 							// if type of scene is not an object, just pass it on.
@@ -69,7 +149,6 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 			});
 		},
 
-
 		// define a common state object and 
 		// define it in each anima elements controlled by this composer
 		state: function(name, state) {
@@ -81,7 +160,7 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 				options: {
 					iterate: function(name, state) {
 						// define the state on each of the composition elements
-						_.each(this._aels, function(ael, id) {
+						_.each(this.composer('ael'), function(ael, id) {
 							ael.anima('state', name, state);
 						});
 
@@ -103,41 +182,28 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 
 		// flow!
 		flow: function(sequence, insist) {
-			// sequence may either be an array or a single state string
-			// the objective is the LAST state of the sequence.
-			var sequence = typeof sequence === 'string' ? [sequence] : sequence,
-				objective = _.last(sequence);
 
-			if ( !this.isNewObjective(objective) && !insist ) {
+			var _this = this;
 
-				// return the promise object
-				return this.promise;
+			sequence = typeof sequence === 'string' ? [sequence] : sequence;
 
-			} else {
-				// set the flow queue as the sequence
-				this.flowq = sequence;
+			// check if each of the flow scenes exist
+			// and define those that do not exist yet
+			_.each(sequence, function(scenename, order) {
+				var scene = _this.composer('scene', scenename);
 
-				var _this = this,
-					// build up a cascade object
-					cascade = Cascade.build();
+				if (!scene) {
+					scene = _this.composer('_parseScene', scenename);
+					_this.composer('scene', scenename, scene);
+				}
+			});
 
-				// stop all aniations on the $el
-				this.$el.stop();
-
-				// add tasks to cascade
-				_.each(sequence, function(statename, index) {
-					cascade.add(function(defer, common) {
-						return _this.anima('_toState', statename);
-					});
-				});
-
-				// run the cascade and return the promise
-				return this.promise = cascade.run();
-			}
+			// taskrunner run method receives: tasknames, insist, common object to be passed to each task.
+			return this.taskrunner('run', sequence, insist, {});
 		}
 	};
 
-	var Composer = Object.create(FSM);
+	var Composer = Object.create(TaskRunner);
 	Composer.extend({
 		init: function(options) {
 			_.interface(options, {
@@ -146,7 +212,10 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 					$els: ['object','undefined'],
 					initial: ['function','undefined']
 				}
-			})
+			});
+
+
+			var _this = this;
 
 			_.bindAll(this, 'composer');
 
@@ -156,12 +225,15 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 			// save the scenes
 			this.composer('scene', options.scenes);
 
+
+			// the default scene
+			this.defaultScene = typeof options.defaultScene === 'string' ? this.composer('scene', options.defaultScene) : options.defaultScene;
+
 			// build the anima elements
 			_.each(options.$els, function(el, index) {
 				var $el = $(el);
 				_this.create({
-					$el: $el,
-					initial: options.initial($el),
+					$el: $el
 				});
 			});
 		},
@@ -195,27 +267,33 @@ function(   $   , Cascade , Eventemitter2 , undef      , undef    , Anima , FSM 
 
 
 		add: function(ael) {
-			ael.anima('state', _.clone(this.composer('state')) );
+			var commonStates = this.composer('state');
+			
+			ael.anima('state', _.clone(commonStates) );
 			this.composer('ael', ael.id, ael);
 
 			return this;
 		},
 
-		states: {
-			'on-transition': {
-				isNewObjective: function(currObjective, objective) {
-					// as the currObjective only refers to 
-					// the current transition, not to the queue,
-					// compare the objective to the last item on the 
-					// flow queue
-					return _.last(this.flowq) !== objective;
-				},
-			},
 
-			'stoppped': {
+		flow: composer.flow,
 
+		/////////////////////////////////////////////////
+		////// OVERWRITE taskrunner condition method ////
+		/////////////////////////////////////////////////
+		// RECEIVES: queue, tasks
+		condition: function(currentQueue, tasks) {
+			if (_.isArray(currentQueue)) {
+				// if currentQueue is an array of task names
+				// check if destinations match
+
+				return _.last(currentQueue) !== _.last(tasks);
+
+			} else if (!currentQueue) {
+				// currentQueue not set
+				return true;
 			}
-		}
+		},
 	});
 
 

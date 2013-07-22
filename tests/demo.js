@@ -8,33 +8,89 @@ define(['composer','anima'], function(Composer, Anima) {
 
 		$els: $('#transition-list').children(),
 
-		initial: function($el) {
-			return $el.attr('data-initial') || $el.prop('id');
+		states: {
+			fadeIn: {
+				opacity: 1,
+				
+				__options: {
+					duration: 3000,
+					__before: {
+						display: 'block',
+						zIndex: 1,
+					}
+				}
+			},
+
+			fadeHalf: {
+				opacity: 0.2,
+
+				__options: {
+					duration: 1000,
+
+					__before: {
+						display: 'block',
+						zIndex: 1,
+					}
+				}
+			},
+
+			halt: function() {
+				var defer = $.Deferred();
+
+				$('#first').html('halted');
+
+				setTimeout(function() {
+					$('#first').html('halt end!');
+					defer.resolve();
+				}, 5000)
+
+				return defer;
+			},
+
+			fadeOut: {
+				opacity: 0,
+				zIndex: 0,
+
+				__options: {
+					duration: 3000,
+					__after: function($el) {
+						$el.css('display', 'none');
+					}
+				}
+			},
+		},
+
+		scenes: {
+			/*
+			'fadeIn:first': {
+				first: 'fadeIn',
+				second: 'fadeHalf',
+				third: 'fadeOut',
+				fourth: 'fadeHalf'
+			},
+			'fadeIn:second': {
+				first: 'fadeOut',
+				second: 'fadeIn',
+				third: 'fadeHalf',
+				fourth: 'fadeHalf'
+
+			}
+			*/
+
+			test: {
+				fourth: 'fadeIn',
+			}
 		}
 	});
-/*
-	<ul id="transition-list" class="transition-list">
-		<li id="first" data-inistate="fadeOut" data-hide-opacity="0.05">
-			1 this one has hide-opacity = 0.05
-			<div></div>
-		</li>
-		<li id="second" data-inistate="fadeIn">
-			2
-			<div></div>
-		</li>
-		<li id="third" data-inistate="not-existent-state">
-			3
-			<div></div>
-		</li>
-		<li id="fourth" >
-			4
-			<div></div>
-		</li>
-	</ul>
 
 
+	composer
+		.flow(['fadeIn:first','fadeIn:second','fadeOut','fadeIn:third|fourth'])
+	//	.flow('test')
+		.then(function() {
+			alert('finished');
+		});
 
-*/
 
 
 });
