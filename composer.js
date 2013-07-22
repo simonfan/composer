@@ -225,7 +225,6 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 			// save the scenes
 			this.composer('scene', options.scenes);
 
-
 			// the default scene
 			this.defaultScene = typeof options.defaultScene === 'string' ? this.composer('scene', options.defaultScene) : options.defaultScene;
 
