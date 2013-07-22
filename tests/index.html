@@ -15,10 +15,86 @@
 	</script>
 
 	<script type="text/javascript" data-main="main.js" src="components/requirejs/require.js"></script>
+	<style type="text/css">
+		#displayer {
+			height: 100px;
+		}
+
+		#clear {
+			clear: both;
+		}
+
+		#transition-list {
+			height: 400px;
+		}
+
+			#transition-list li {
+				height: 400px;
+				width: 100%;
+
+				opacity: 0;
+
+				float: left;
+				width: 200px;
+			}
+
+			#first {
+				background-color: red;
+			}
+
+			#second {
+				background-color: #ff4f8a;
+			}
+
+			#third {
+				background-color: #efefef;
+			}
+
+			#fourth {
+				background-color: green;
+			}
+
+		#nav li:hover {
+			cursor: pointer;
+			background-color: #efefef;
+		}
+	</style>
 	
 </head>
 
-<body>	
+<body>
+
+	<div id="displayer"></div>
+
+	<ul id="nav">
+		<li data-to="first">1st</li>
+		<li data-to="second">2nd</li>
+		<li data-to="third">3rd</li>
+		<li data-to="fourth">4th</li>
+		<li data-to="all">ALL</li>
+		<li data-to="odd">ODD</li>
+		<li data-to="even">EVEN</li>
+		<li data-to="even-half">EVEN half</li>
+	</ul>
+
+	<ul id="transition-list" class="transition-list">
+		<li id="first" data-inistate="fadeOut" data-hide-opacity="0.05">
+			1 this one has hide-opacity = 0.05
+			<div></div>
+		</li>
+		<li id="second" data-inistate="fadeIn">
+			2
+			<div></div>
+		</li>
+		<li id="third" data-inistate="not-existent-state">
+			3
+			<div></div>
+		</li>
+		<li id="fourth" >
+			4
+			<div></div>
+		</li>
+	</ul>
 
 	This is index.html, running demo, using the component.css stylesheet.
 
