@@ -149,26 +149,64 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 			});
 		},
 
-		// define a common state object and 
-		// define it in each anima elements controlled by this composer
-		state: function(name, state) {
+		// use the same state saving logic as in anima.js
+		state: function(name, state, overwrite) {
+
+			/*
+				state: {
+					// jquery animation possibilities
+
+					__options: {
+						__before: function()
+						__after: function()
+					}
+				}
+			*/
+
+			var _this = this;
+
+
+			/////////////////////////////
+			/// 2: save the state obj ///
+			/////////////////////////////
 			return _.getset({
 				context: this,
-				obj: '_states',
+				obj: '_commonAstates',
 				name: name,
 				value: state,
 				options: {
-					iterate: function(name, state) {
-						// define the state on each of the composition elements
-						_.each(this.composer('ael'), function(ael, id) {
-							ael.anima('state', name, state);
-						});
+					overwrite: overwrite,
 
-						return state;
+					iterate: function(name, state) {
+
+						// if state is an object, clone it so that the original may remain unaltered.
+						// otherwise pass it on
+						var savestate = typeof state === 'object' ? _.clone(state) : state;
+
+						// clone the options and save them
+						if (savestate.__options) {
+							this.composer('options', name, _.clone(savestate.__options));
+
+							// delete the options from the savestate object
+							delete savestate.__options;
+						}
+
+						// return savestate instead of state object.
+						return savestate;
 					},
 				}
 			})
 		},
+
+		options: function(name, options) {
+			return _.getset({
+				context: this,
+				obj: '_commonAoptions',
+				name: name,
+				value: options
+			})
+		},
+
 
 		// ael is the anima object
 		ael: function(id, ael) {
@@ -177,6 +215,17 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 				obj: '_aels',
 				name: id,
 				value: ael,
+				options: {
+					iterate: function(id, ael) {
+						// set commonAstates and commonAoptions on the ael
+						ael.anima('settings', {
+							commonAstates: this.composer('state'),
+							commonAoptions: this.composer('options'),
+						});
+
+						return ael;
+					}
+				}
 			});
 		},
 
@@ -247,16 +296,11 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 				options: {
 					id: 'string' or undefined (defaults to $el.prop('id'))
 					$el: jquery object,
-					initial: 'string' or function() {}
 
 					// optional: states
 					states: object
 				}
 			*/
-
-			// set the states object
-			options.states = _.extend({}, this.composer('state'), options.states);
-
 			var ael = Anima.build(options);
 
 			this.composer('ael', ael.id, ael);
@@ -266,11 +310,7 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 
 
 		add: function(ael) {
-			var commonStates = this.composer('state');
-			
-			ael.anima('state', _.clone(commonStates) );
 			this.composer('ael', ael.id, ael);
-
 			return this;
 		},
 

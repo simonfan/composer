@@ -6,7 +6,7 @@ define(['composer','anima'], function(Composer, Anima) {
 
 	window.composer = Composer.build({
 
-		$els: $('#transition-list').children(),
+		$els: $('.g1'),
 
 		states: {
 			fadeIn: {
@@ -84,11 +84,26 @@ define(['composer','anima'], function(Composer, Anima) {
 	});
 
 
+
+	composer.create({
+		$el: $('#fifth'),
+		states: {
+			fadeOut: {
+				opacity: 0.3,
+				__options: {
+					__before: {
+						display: 'block',
+					}
+				}
+			},
+		}
+	})
+
+
 	composer
-		.flow(['fadeIn:first','fadeIn:second','fadeOut','fadeIn:third|fourth'])
-	//	.flow('test')
+		.flow(['fadeIn:first','fadeIn:second','fadeOut','fadeIn:third|fourth|fifth'])
 		.then(function() {
-			alert('finished');
+			composer.flow('fadeOut');
 		});
 
 
