@@ -2,11 +2,10 @@
   "name": "composer",
   "version": "0.0.1",
   "dependencies": {
-    "jquery": "lastest",
-    "underscore": "latest",
-    "requirejs": "latest",
-    "anima": "simonfan/anima",
-    "taskrunner": "simonfan/taskrunner"
+    "anima": "*",
+    "taskrunner": "simonfan/taskrunner",
+    "jquery": "~2.0.3",
+    "underscore": "*"
   },
   "main": "composer.js"
 }
