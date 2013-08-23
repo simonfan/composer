@@ -101,7 +101,7 @@ define(['composer','anima'], function(Composer, Anima) {
 
 
 	composer
-		.flow(['fadeIn:first','fadeIn:second','fadeOut','fadeIn:third|fourth|fifth'])
+		.flow(['test','fadeIn:first','fadeIn:second','fadeOut','fadeIn:third|fourth|fifth'])
 		.then(function() {
 			composer.flow('fadeOut');
 		});

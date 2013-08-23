@@ -48,7 +48,10 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 
 			// set state as stopped when this animation ends
 			promise.then(function() {
-
+				/**
+				 * Save the current scene name.
+				 */
+				_this.scene = scenename;
 			});
 
 			/////////////////////////////
@@ -279,9 +282,13 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 
 			// build the anima elements
 			_.each(options.$els, function(el, index) {
-				var $el = $(el);
+				var $el = $(el),
+					// check if there is a 'idAttr' in options
+					id = options.idAttr ? $el.attr(options.idAttr) : $el.prop('id');
+
 				_this.create({
-					$el: $el
+					$el: $el,
+					id: id,
 				});
 			});
 		},
@@ -330,7 +337,10 @@ function(   $   , undef      , undef    , Anima , TaskRunner ) {
 
 			} else if (!currentQueue) {
 				// currentQueue not set
-				return true;
+				/**
+				 * Compare current scene to tasks
+				 */
+				return this.scene !== _.last(tasks);
 			}
 		},
 	});
